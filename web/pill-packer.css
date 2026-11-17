@@ -1,0 +1,72 @@
+/* Renderer overrides are restricted to participating, collapsed Vue nodes. */
+.lg-node[data-pill-packer] {
+  width: var(--pill-packer-width) !important;
+  min-width: var(--pill-packer-width) !important;
+  max-width: var(--pill-packer-width) !important;
+  --node-width: var(--pill-packer-width) !important;
+  --min-node-width: 0px !important;
+}
+.lg-node[data-pill-packer] > [data-testid="node-inner-wrapper"] {
+  width: var(--pill-packer-width) !important;
+  min-width: 0 !important;
+  max-width: var(--pill-packer-width) !important;
+}
+.lg-node[data-pill-packer] .lg-node-header { box-sizing: border-box; max-width: 100%; }
+.pp-dialog, .pp-dialog * { box-sizing: border-box; }
+.pp-dialog {
+  color-scheme: dark;
+  color: #eeeaf4; background: #202027;
+  border: 1px solid #45404e; border-radius: 18px;
+  padding: 0; width: min(900px, calc(100vw - 32px)); max-height: calc(100dvh - 32px);
+  font: 14px/1.45 system-ui, sans-serif;
+  box-shadow: 0 28px 100px #0008;
+}
+.pp-dialog::backdrop { background: #08080db8; backdrop-filter: blur(3px); }
+.pp-dialog [hidden] { display: none !important; }
+.pp-form { display: flex; flex-direction: column; max-height: calc(100dvh - 34px); }
+.pp-header { padding: 26px 28px 22px; height: auto; min-height: 130px; display: flex; flex-shrink: 0; align-items: flex-start; justify-content: space-between; gap: 12px; border-bottom: 1px solid #ffffff12; background: transparent; }
+.pp-eyebrow { font-size: 10px; letter-spacing: .16em; font-weight: 750; color: #b7a8da; }
+.pp-header h2 { font-size: 23px; font-weight: 620; margin: 7px 0 6px; letter-spacing: -.035em; }
+.pp-header p { color: #a9a3b1; margin: 0; font-size: 12px; }
+.pp-dialog button { font: inherit; cursor: pointer; border: 1px solid transparent; border-radius: 8px; padding: 9px 14px; white-space: nowrap; }
+.pp-dialog .pp-close { background: transparent; color: #b8b1c4; font-size: 26px; align-self: flex-start; padding: 0 5px; line-height: 1; }
+.pp-dialog button:hover { filter: brightness(1.15); }
+.pp-dialog button:disabled { opacity: .4; cursor: default; }
+.pp-dialog :is(input,select,button):focus-visible { outline: 2px solid #bc9cff; outline-offset: 2px; }
+.pp-body { min-height: 0; overflow-y: auto; display: grid; grid-template-columns: 1fr .95fr; }
+.pp-controls { padding: 24px 28px; min-width: 0; }
+.pp-dialog fieldset { border: 0; padding: 18px 0 0; margin: 18px 0 0; border-top: 1px solid #ffffff12; }
+.pp-dialog legend { float: none; padding: 0; font-size: 12px; font-weight: 700; margin-bottom: 4px; color: #d2cadf; }
+.pp-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 13px; min-width: 0; font-size: 12px; color: #bdb6c7; }
+.pp-dialog :is(input:not([type=checkbox]),select) { width: 100%; min-width: 0; color: #f0edf6; background: #17171e; border: 1px solid #45404e; border-radius: 7px; padding: 9px 10px; font: inherit; }
+.pp-dialog input[type=checkbox] { accent-color: #b092ef; width: 15px; height: 15px; }
+.pp-dialog small { color: #928b9f; font-size: 11px; }
+.pp-hint { display: block; margin-top: -3px; line-height: 1.5; }
+.pp-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; clear: both; }
+.pp-check { display: flex; align-items: center; gap: 7px; font-size: 12px; margin-top: 18px; }
+.pp-title-min-hint { margin: 8px 0 12px; }
+.pp-preview-panel { border-left: 1px solid #ffffff12; background: #19191f; padding: 26px 24px; min-width: 0; }
+.pp-preview { display: flex; justify-content: center; align-items: center; margin-top: 14px; height: 240px; border-radius: 10px; border: 1px solid #ffffff0b; background-color: #141419; background-image: radial-gradient(#ffffff10 1px, transparent 1px); background-size: 16px 16px; padding: 8px; overflow: hidden; }
+.pp-preview svg { width: 100%; height: 100%; font-family: system-ui, sans-serif; }
+.pp-preview p { padding: 18px; color: #a9a3b1; font-size: 12px; }
+.pp-summary { color: #d0c6df; font-size: 12px; margin: 14px 0 8px; }
+.pp-note { color: #918a9e; font-size: 12px; line-height: 1.6; }
+.pp-save-box { display: flex; flex-wrap: wrap; gap: 10px; border-top: 1px solid #ffffff12; margin-top: 26px; padding-top: 22px; }
+.pp-save-box input { flex: 1 1 130px; }
+.pp-secondary { background: #302c39; color: #d8d0e4; border-color: #494151 !important; }
+.pp-dialog .pp-text-button { color: #afa0c5; padding: 2px 0; font-size: 11px; background: none; }
+.pp-primary { color: #201a2d; background: #c4a5fa; font-weight: 700 !important; }
+.pp-footer { display: flex; flex-shrink: 0; align-items: center; justify-content: space-between; gap: 16px; border-top: 1px solid #ffffff12; padding: 18px 28px; }
+.pp-status { margin: 0; font-size: 11px; color: #9b92aa; }
+.pp-error { color: #ffb7b7; }
+.pp-actions { display: flex; gap: 10px; }
+.pp-toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); z-index: 100000; max-width: min(600px,90vw); border: 1px solid #655478; border-radius: 10px; padding: 13px 20px; background: #272030; color: #eeeaf4; box-shadow: 0 8px 30px #0006; font: 14px/1.5 system-ui,sans-serif; }
+@media(max-width: 680px) {
+  .pp-body { grid-template-columns: 1fr; }
+  .pp-preview-panel { border-left: 0; border-top: 1px solid #ffffff12; }
+  .pp-preview { height: 180px; }
+  .pp-header, .pp-controls, .pp-preview-panel { padding: 20px; }
+  .pp-footer { padding: 16px 20px; flex-wrap: wrap; }
+  .pp-actions { margin-left: auto; }
+  .pp-header h2 { font-size: 21px; }
+}

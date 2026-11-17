@@ -1,0 +1,14 @@
+[project]
+name = "flanorama-tools"
+version = "0.1.0"
+description = "LoRA routing, prompt and node history, canvas packing, and scene handoff for ComfyUI."
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+dependencies = ["markdown-it-py>=3,<5"]
+
+[project.urls]
+Repository = "https://github.com/aimlessIdler/flanorama-tools"
+
+[tool.comfy]
+PublisherId = "flanorama"
+DisplayName = "Flanorama Tools"

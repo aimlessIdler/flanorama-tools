@@ -1,0 +1,8 @@
+{
+  "name": "flanorama-tools",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.js tests/*.test.mjs"
+  }
+}
