@@ -58,7 +58,7 @@
 .lora-router .lr-route-toggle { padding-inline: 4px; width: 45px; font-size: 12px; }
 .lora-router .lr-route-controls { display: flex; gap: 2px; }
 .lora-router .lr-modules { display: grid; grid-template-columns: repeat(var(--lr-columns), 99px); column-gap: 5px; row-gap: 2px; }
-.lora-router .lr-footer { display: flex; gap: 4px; padding-top: 4px; }
+.lora-router .lr-footer { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding-top: 4px; }
 .lora-router .lr-footer button { padding-inline: 5px; }
 .lora-router.lr-dialog {
   max-width: min(580px, 92vw);
@@ -92,3 +92,8 @@
 .lora-router .lr-info-section p, .lora-router .lr-description { white-space: pre-wrap; overflow-wrap: anywhere; }
 .lora-router .lr-description { max-height: 180px; overflow: auto; }
 .lora-router .lr-actions button { max-width: 100%; overflow-wrap: anywhere; white-space: normal; }
+
+.lora-router .lr-footer-control { display:flex; align-items:center; gap:3px; font-size:12px; }
+.lora-router .lr-all { min-width:31px; padding-inline:1px; font-size:12px; }
+.lora-router .lr-compact, .lora-router .lr-eye { width:25px; padding:2px; }
+.lora-router .lr-eye svg { display:block; width:19px; height:19px; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }

@@ -90,10 +90,14 @@ class Timeline:
                 UNIQUE (event_id, node_id, kind, filename, subfolder, type)
             )""")
             self.conn.execute("CREATE INDEX IF NOT EXISTS idx_event_outputs_event ON event_outputs(event_id)")
+            self.conn.execute("""CREATE TABLE IF NOT EXISTS event_layouts (
+                event_id INTEGER PRIMARY KEY REFERENCES queue_events(id) ON DELETE CASCADE,
+                layout_json TEXT NOT NULL
+            )""")
 
     # ---- capture -----------------------------------------------------------
 
-    def record_event(self, prompt_id, graph, workflow_id="", now_ms=None):
+    def record_event(self, prompt_id, graph, workflow_id="", now_ms=None, layout=None):
         """Record one accepted queue submission. Idempotent per prompt_id."""
         import time
         if not isinstance(prompt_id, str) or not prompt_id or not isinstance(graph, dict):
@@ -106,6 +110,9 @@ class Timeline:
             event_id = self.conn.execute(
                 "INSERT INTO queue_events (prompt_id, ts_ms, workflow_id) VALUES (?,?,?)",
                 (prompt_id, now, str(workflow_id or ""))).lastrowid
+            if isinstance(layout, dict):
+                self.conn.execute("INSERT INTO event_layouts VALUES (?,?)",
+                                  (event_id, json.dumps(layout, ensure_ascii=False)))
             for node_id, node in graph.items():
                 if not isinstance(node, dict) or not isinstance(node.get("class_type"), str):
                     continue
@@ -197,6 +204,24 @@ class Timeline:
                 return None
             nodes = self._event_nodes(row["id"])
             return {**dict(row), "nodes": list(nodes.values()), "outputs": self._outputs_for([row["id"]]).get(row["id"], [])}
+
+    def run_summary(self, event_id):
+        """Compare a queue submission to its preceding run of the same workflow."""
+        with self.lock:
+            event = self.get_event(event_id)
+            if event is None:
+                return None
+            previous = self.conn.execute(
+                "SELECT id FROM queue_events WHERE workflow_id=? AND id<? ORDER BY id DESC LIMIT 1",
+                (event["workflow_id"], event["id"])).fetchone()
+            layout = self.conn.execute("SELECT layout_json FROM event_layouts WHERE event_id=?",
+                                       (event["id"],)).fetchone()
+            comparison = self.diff(previous[0], event["id"]) if previous else {
+                "a": None, "b": event["id"],
+                "summary": {"unchanged": 0, "changed": 0, "added": len(event["nodes"]), "removed": 0},
+                "nodes": [{**node, "status": "added", "changes": []} for node in event["nodes"]],
+            }
+            return {**event, "comparison": comparison, "layout": json.loads(layout[0]) if layout else {}}
 
     def diff(self, a_id, b_id):
         """Compare two events node by node: unchanged / changed / added / removed (relative to a)."""

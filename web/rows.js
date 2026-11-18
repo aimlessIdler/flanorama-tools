@@ -37,7 +37,7 @@ function routeLayout(moduleCount, width) {
 }
 
 export function widgetHeight(config, prefs, width) {
-  return 33 + config.rows.reduce((height, row, index) => {
+  return (width < 460 ? 64 : 33) + config.rows.reduce((height, row, index) => {
     if (prefs.hideOff && !row.on) return height;
     const count = row.perOutput ? routeBranches(row, config.count).filter(branch => branch > 1).length : 0;
     const lines = prefs.expanded[index] ? routeLayout(count, width).lines : 0;
@@ -175,10 +175,35 @@ export function renderRows(controller) {
   });
   const footer = element('div', { class: 'lr-footer' });
   footer.append(
-    button('+ LoRA', () => controller.dialogs.pick()),
-    button('★ Favorites', () => controller.dialogs.pick(null, 'Favorites')),
+    button('+', () => controller.dialogs.pick(), { label: 'Add LoRA', className: 'lr-compact' }),
+    button('⭐', () => controller.dialogs.pick(null, 'Favorites'), { label: 'Favorites', className: 'lr-compact' }),
     button('Triggers', () => controller.dialogs.triggers()),
     button('Presets ▾', () => controller.dialogs.presets()),
+  );
+
+  const allOn = config.rows.length > 0 && config.rows.every(row => row.on);
+  const all = element('label', { class: 'lr-footer-control' }, 'All');
+  all.append(button(allOn ? 'On' : 'Off', () => controller.toggleAll(), {
+    className: 'lr-all', label: allOn ? 'Turn all LoRAs off' : 'Turn all LoRAs on',
+    pressed: allOn, disabled: !config.rows.length,
+  }));
+  const off = element('label', { class: 'lr-footer-control' }, 'Off');
+  const eye = button('', () => controller.toggleHide(), {
+    className: 'lr-eye', label: prefs.hideOff ? 'Show disabled LoRAs' : 'Hide disabled LoRAs',
+    pressed: !prefs.hideOff,
+  });
+  const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  icon.setAttribute('viewBox', '0 0 24 24');
+  icon.setAttribute('aria-hidden', 'true');
+  const path = document.createElementNS(icon.namespaceURI, 'path');
+  path.setAttribute('d', 'M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12 M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0' + (prefs.hideOff ? ' M3 3l18 18' : ''));
+  icon.append(path);
+  eye.append(icon);
+  off.append(eye);
+  footer.append(
+    all, off,
+    button(prefs.portsOpen ? 'Ports ▾' : 'Ports ▸', () => controller.togglePorts()),
+    button('⚙', () => controller.dialogs.settings(), { label: 'Settings', className: 'lr-compact' }),
   );
   root.replaceChildren(stack, footer);
 }

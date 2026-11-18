@@ -6,7 +6,7 @@ Route LoRAs to several model branches, revisit prompts and node settings, organi
 | --- | --- |
 | [LoRA Router](docs/LoRA-Router.md) | Search **LoRA Router**. Route a LoRA stack across up to 64 MODEL/CLIP pairs. |
 | [Prompt History](docs/Prompt-History.md) | Search **Prompt History**. Browse, save, and reuse prompts across workflows. |
-| [Node Timeline](docs/Prompt-History.md#node-timeline) | Right-click a node and choose **Node timeline…**. Compare queued settings, preview available outputs, and restore widget values. |
+| [Workflow History](docs/Prompt-History.md#workflow-history) | Open **Edit → Flanorama → Workflow History** to compare queued runs across the workflow. Inspect individual nodes from the change map. |
 | [Pill Packer](docs/Pill-Packer.md) | Select nodes and press **Alt + Shift + P** or use **Pill Packer → Pack selection…**. |
 | Markdown Note | Search **Markdown Note (Flanorama)**. Switch between Edit and Preview. Copy fenced code straight from the note. |
 | Simple Sampler & Scheduler | Connect its SAMPLER and SCHEDULER outputs to converted sampler widgets to share one setting across several samplers. |
@@ -37,13 +37,13 @@ For unattended queues, use **Exact frame** with a one-based `frame_number`, or *
 
 Markdown preview renders on the ComfyUI server. Remote images linked in a note load in the browser. Prompt History shares one SQLite archive across the server. Node Timeline logs accepted workflow inputs and output file references even when the workflow contains no Prompt History node. Anyone with access to the history routes on a shared ComfyUI server can browse that archive.
 
-LoRA Router uses Civitai only when you request metadata. Local inference does not require it. The LoRA Router's custom controls target the Legacy frontend. Node Timeline's canvas badges and restore actions are currently for top-level workflow nodes.
+LoRA Router uses Civitai only when you request metadata. Local inference does not require it. The LoRA Router's custom controls target the Legacy frontend. Workflow History records the executable graph. Individual node restore actions currently support top-level workflow nodes.
 
 ## Development
 
 Run `npm test` for the JavaScript suites and `python -m unittest discover -s tests` with ComfyUI's Python for the backend suites. Run `python tools/package.py` with Python 3.11 or later to create an install ZIP under `dist/`.
 
-At startup, the terminal banner shows the package version and registered node count. It stacks the text below the logo in narrow terminals and uses a plain summary in redirected output or with `NO_COLOR` set.
+At startup, the terminal banner shows the package version and registered node count. It stacks the text below the logo in narrow terminals and uses a plain summary with `NO_COLOR` set. The logo also renders through Windows launchers that pipe terminal output.
 
 ## Publishing
 

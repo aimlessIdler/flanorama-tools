@@ -69,3 +69,61 @@ export function badgeRect(nodeWidth, titleHeight, label) {
 export function inRect(rect, x, y) {
   return x >= rect.x && x <= rect.x + rect.w && y >= rect.y && y <= rect.y + rect.h;
 }
+
+// Interpret structured inputs using their shape. Custom nodes need no adapters.
+export function readableChanges(changes) {
+  const decoded = value => {
+    if (typeof value !== "string") return value;
+    try { return JSON.parse(value); } catch { return value; }
+  };
+  const labelFor = key => {
+    const words = key.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/_/g, " ");
+    return words.charAt(0).toUpperCase() + words.slice(1);
+  };
+  const output = [];
+  function visit(label, oldValue, newValue, source) {
+    if (JSON.stringify(oldValue) === JSON.stringify(newValue)) return;
+    if (output.length >= 100) return;
+    const old = decoded(oldValue), next = decoded(newValue);
+    if (old && next && typeof old === "object" && typeof next === "object" &&
+        !isLink(old) && !isLink(next) && Array.isArray(old) === Array.isArray(next)) {
+      const prefix = label ? label + " · " : "";
+      const skipped = new Set();
+      // Width/height pairs are common across image, video, and latent nodes.
+      const dimensions = ["width", "height"].every(key => key in old && key in next)
+        ? ["width", "height"] : ["w", "h"].every(key => key in old && key in next) ? ["w", "h"] : null;
+      if (dimensions && dimensions.every(key => Number.isFinite(old[key]) && Number.isFinite(next[key]))) {
+        const [width, height] = dimensions;
+        visit(prefix + "Dimensions", old[width] + " × " + old[height], next[width] + " × " + next[height], source);
+        dimensions.forEach(key => skipped.add(key));
+      }
+      for (const key of new Set([...Object.keys(old), ...Object.keys(next)])) {
+        if (skipped.has(key)) continue;
+        let before = old[key], after = next[key];
+        // Resolve an index into an unambiguous sibling collection, so the
+        // selected value is visible even when the node serializes an index.
+        if (/^(selected|selected_index|active_index|index)$/i.test(key) &&
+            Number.isInteger(before) && Number.isInteger(after)) {
+          const collections = Object.keys(next).filter(name =>
+            Array.isArray(old[name]) && Array.isArray(next[name]) &&
+            before >= 0 && after >= 0 && before < old[name].length && after < next[name].length);
+          if (collections.length === 1) {
+            const name = collections[0];
+            before = old[name][before];
+            after = next[name][after];
+            if (JSON.stringify(before) !== JSON.stringify(after)) {
+              output.push({ param: prefix + labelFor(key), old: before, new: after, source });
+              continue;
+            }
+          }
+        }
+        visit(prefix + labelFor(key), before, after, source);
+      }
+    } else {
+      output.push({ param: label, old: oldValue, new: newValue, source });
+    }
+  }
+  for (const change of changes) visit(labelFor(change.param), change.old, change.new, change.param);
+  if (output.length === 100) output.push({param:"More changes", new:"Open all parameters for the full state"});
+  return output;
+}

@@ -67,3 +67,22 @@ test("badge geometry and hit testing", () => {
   assert.equal(c.inRect(r, r.x - 1, r.y + 1), false);
   assert.equal(c.inRect(r, r.x + 1, 5), false);
 });
+
+test("structured changes infer dimensions and selected items without node type adapters", () => {
+  const old = {sizes:[[1280,1280],[1080,1920]],selected:0,orientation:"portrait",w:1280,h:1280};
+  const next = {...old,selected:1,orientation:"landscape",w:1920,h:1080};
+  const changes = c.readableChanges([{param:"SizesState",old:JSON.stringify(old),new:JSON.stringify(next)}]);
+  assert.deepEqual(changes.map(x => [x.param,x.old,x.new]), [
+    ["Sizes State · Dimensions","1280 × 1280","1920 × 1080"],
+    ["Sizes State · Selected",[1280,1280],[1080,1920]],
+    ["Sizes State · Orientation","portrait","landscape"],
+  ]);
+  const weight = c.readableChanges([{param:"config",old:'{"weight":1.2,"enabled":true}',new:'{"weight":1.3,"enabled":true}'}]);
+  assert.deepEqual(weight, [{param:"Config · Weight",old:1.2,new:1.3,source:"config"}]);
+  const selection = c.readableChanges([{param:"settings",old:{choices:["fast","fine"],index:0},new:{choices:["fast","fine"],index:1}}]);
+  assert.equal(selection[0].old,"fast");
+  assert.equal(selection[0].new,"fine");
+  const ambiguous = c.readableChanges([{param:"settings",old:{a:[1,2],b:[3,4],index:0},new:{a:[1,2],b:[3,4],index:1}}]);
+  assert.equal(ambiguous[0].old,0);
+  assert.equal(ambiguous[0].new,1);
+});

@@ -22,6 +22,19 @@ class RouterController {
     this.titleHeight = globalThis.LiteGraph?.NODE_TITLE_HEIGHT ?? 30;
     this.root = element('div', { class: 'lora-router', 'aria-label': 'LoRA stack' });
     this.dialogs = new Dialogs(this);
+    this.root.addEventListener('wheel', event => {
+      const canvas = app.canvas?.canvas;
+      if (!canvas) return;
+      event.stopImmediatePropagation();
+      event.preventDefault();
+      canvas.dispatchEvent(new WheelEvent('wheel', {
+        deltaX: event.deltaX, deltaY: event.deltaY, deltaMode: event.deltaMode,
+        clientX: event.clientX, clientY: event.clientY,
+        ctrlKey: event.ctrlKey, shiftKey: event.shiftKey, altKey: event.altKey,
+        metaKey: event.metaKey, bubbles: true, cancelable: true,
+      }));
+    }, { capture: true, passive: false });
+
     this.resizing = false;
     this.drag = null;
     this.paint = null;
@@ -42,10 +55,6 @@ class RouterController {
       }
       event.stopPropagation();
     });
-    this.portsButton = node.addTitleButton({ name: 'lora-router-ports', text: 'Ports ▸', fontSize: 12, xOffset: -23 });
-    this.settingsButton = node.addTitleButton({ name: 'lora-router-settings', text: '⚙', fontSize: 15, xOffset: -34 });
-    this.hideButton = node.addTitleButton({ name: 'lora-router-hide', text: 'Hide Off', fontSize: 12, xOffset: -40 });
-    this.allButton = node.addTitleButton({ name: 'lora-router-all', text: 'All On', fontSize: 12, xOffset: -46 });
     node.properties[PREFS_KEY] = this.prefs;
     node.size[0] = INITIAL_WIDTH;
   }
@@ -62,9 +71,6 @@ class RouterController {
       const width = Math.max(MIN_WIDTH, node.size[0]);
       if (width !== node.size[0]) node.size[0] = width;
       layoutSockets(node, config, prefs.portsOpen, this.titleHeight);
-      this.portsButton.text = prefs.portsOpen ? 'Ports ▾' : 'Ports ▸';
-      this.hideButton.text = prefs.hideOff ? 'Show Off' : 'Hide Off';
-      this.allButton.text = config.rows.length && config.rows.every(row => row.on) ? 'All Off' : 'All On';
       const height = node.widgets_start_y + widgetHeight(config, prefs, width);
       const widthChanged = this.renderedWidth !== width;
       this.renderedWidth = width;
@@ -340,7 +346,7 @@ app.registerExtension({
     const resize = proto.onResize;
     const computeSize = proto.computeSize;
     const removed = proto.onRemoved;
-    const titleClick = proto.onTitleButtonClick;
+
 
     proto.onNodeCreated = function (...args) {
       const result = created?.apply(this, args);
@@ -370,16 +376,6 @@ app.registerExtension({
       if (!controller) return drawSlots.call(this, ctx, options);
       if (controller.prefs.portsOpen) drawActiveSockets(ctx, this, controller.config, options);
       else drawFoldedSockets(ctx, this, controller.config, app.canvas?.default_connection_color_byType, controller.titleHeight);
-    };
-    proto.onTitleButtonClick = function (button, canvas) {
-      const controller = controllers.get(this);
-      if (controller && !canvas.read_only) {
-        if (button.name === 'lora-router-ports') { controller.togglePorts(); return; }
-        if (button.name === 'lora-router-settings') { controller.dialogs.settings(); return; }
-        if (button.name === 'lora-router-hide') { controller.toggleHide(); return; }
-        if (button.name === 'lora-router-all') { controller.toggleAll(); return; }
-      }
-      titleClick?.call(this, button, canvas);
     };
     proto.onRemoved = function (...args) {
       const controller = controllers.get(this);

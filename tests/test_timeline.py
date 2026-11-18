@@ -197,6 +197,21 @@ class TestTimeline(unittest.TestCase):
         self.assertEqual(s["nodes"]["4"]["states"],1)
         self.assertEqual(self.t.workflow_summary("elsewhere")["event_count"],1)
 
+    def test_run_summary_compares_same_workflow_and_keeps_layout(self):
+        a = self.t.record_event("first", graph(seed=1), "wf")
+        self.t.record_event("other-workflow", graph(seed=99), "other")
+        b = self.t.record_event("second", graph(seed=2), "wf", layout={"2": {"pos": [500, 200]}})
+        result = self.t.run_summary(b)
+        self.assertEqual(result["comparison"]["a"], a)
+        self.assertEqual(result["comparison"]["summary"]["changed"], 1)
+        self.assertEqual(result["layout"], {"2": {"pos": [500, 200]}})
+        self.assertEqual(self.t.run_summary(a)["comparison"]["a"], None)
+        self.assertEqual(self.t.run_summary(a)["layout"], {})
+        self.assertIsNone(self.t.run_summary(99999))
+        # Reopening an existing database preserves its pre-layout events.
+        reopened = tl.Timeline(self.db.conn, self.db.lock)
+        self.assertEqual(reopened.run_summary(a)["nodes"], self.t.get_event(a)["nodes"])
+
     def test_routes(self):
         original=ph.STORE;ph.STORE=self.db
         a=self.t.record_event("r1",graph(),"wf");b=self.t.record_event("r2",graph(seed=9),"wf")

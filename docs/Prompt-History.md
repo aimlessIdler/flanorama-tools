@@ -29,22 +29,22 @@ A persistent SQLite archive is stored at:
 
 This survives ComfyUI restarts and workflow changes. The **Export** command creates a JSON backup; **Import** merges saved entries. Delete / Clear operations cannot be undone unless you have exported a backup. Pinned entries are protected from automatic history-limit pruning. If pinned entries alone exceed the limit, the limit is soft until you unpin or delete them.
 
-## Node Timeline
+## Workflow History
 
-Each accepted queue submission is recorded as an event. The timeline keeps each node's type and input values, including links, and associates available output file references with the execution that produced them. It uses the same SQLite database as Prompt History.
+Open **Edit → Flanorama → Workflow History**, or right-click the canvas or any node and choose **Workflow History…**. The default view compares each queued run with the preceding run of the same workflow.
 
-Read endpoints (all GET, under `/prompt_history/timeline/`):
+Select a run by date and time. The change map uses the saved canvas positions and marks changed, unchanged, added, and removed nodes with labeled colors. Hover or focus a node for a quick summary. Click it to inspect its changes and open its individual history when the matching node is on the canvas.
 
-- `events?workflow_id=&limit=&before_id=` lists events, newest first.
-- `event?id=` returns one event with every node's state and its outputs.
-- `diff?a=&b=` returns unchanged / changed / added / removed per node, with per-parameter old and new values.
-- `workflow?workflow_id=` returns per-node state counts and which nodes changed in the latest queue (drives the canvas badges).
-- `node?workflow_id=&node_id=&limit=&collapse=1` returns one node's state history in one workflow, newest first, each state with the parameters it changed and the outputs it produced.
+Parameter changes show the old value struck through and the new value beside it. Structured widget values expand into changed fields. General interpretation rules combine width and height, resolve selection indices when there is one matching collection, and omit unchanged fields and lists. Ambiguous selections retain their numeric index. These rules apply to any node type. Runs recorded before v0.1.1 use a grid when canvas positions are unavailable. The history covers the executable graph submitted for a run, including its links. Muted and unused nodes omitted by ComfyUI are outside that run.
 
-### Open a node’s history
+**Outputs from this run** lists the files reported for that execution. Files can be opened while they remain available on the server. Temporary previews may expire.
 
-- Nodes with more than one recorded state get a small `⏱ n` badge in the title bar, amber when the node changed in the latest queue.
-- Click the badge, or right-click a node and choose **Node timeline…**, to open a docked panel. Each entry shows the parameters that changed (old to new), the outputs that state produced, an "on canvas" tag when the node currently matches it, and **Restore** buttons for the whole state or a single parameter.
-- Restore writes widget values only. Link inputs (wiring) and hidden inputs are listed but skipped.
-- Nodes inside subgraphs are not supported yet. If the badge does not appear in your frontend, the right-click entry is the fallback.
-- History only references output files. A preview is available while its file remains on the ComfyUI server.
+### Individual node history
+
+Right-click a node and choose **Node timeline…**, or use **Node history** in a run's node detail. **All runs** returns to the workflow view. Canvas history badges are removed in v0.1.1.
+
+Restore writes matching widget values in an undoable canvas change. Restoring one field inside a structured widget restores that widget's recorded value. Link inputs and hidden inputs without matching widgets are displayed without a restore action. Subgraph internals remain outside the node restore UI.
+
+The database is upgraded automatically, preserving the existing archive. No new history is synthesized for past runs.
+
+Read endpoints under `/prompt_history/timeline/` include `events`, `event`, `diff`, `workflow`, `node`, and `run?id=`. The run endpoint returns the preceding-run comparison and saved canvas positions.

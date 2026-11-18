@@ -309,6 +309,29 @@ def _workflow_id(submitted):
     return str(wid) if wid else ""
 
 
+def _workflow_layout(submitted):
+    extra = submitted.get("extra_data") or {}
+    if not isinstance(extra, dict):
+        return {}
+    info = extra.get("extra_pnginfo") or {}
+    workflow = (info.get("workflow") if isinstance(info, dict) else None) or extra.get("workflow") or {}
+    if isinstance(workflow, str):
+        try:
+            workflow = json.loads(workflow)
+        except ValueError:
+            return {}
+    if not isinstance(workflow, dict):
+        return {}
+    result = {}
+    for node in workflow.get("nodes", []):
+        if not isinstance(node, dict):
+            continue
+        pos = node.get("pos")
+        if isinstance(pos, list) and len(pos) >= 2 and all(isinstance(v, (int, float)) for v in pos[:2]):
+            result[str(node.get("id"))] = {"pos": pos[:2]}
+    return result
+
+
 def _on_executed(data):
     """Link an `executed` message's file outputs to their queue event."""
     if not isinstance(data, dict):
@@ -366,7 +389,8 @@ async def _capture_accepted_prompts(request, handler):
     except Exception:
         LOGGER.exception("Could not record queued prompt (generation unaffected)")
     try:
-        if STORE.timeline.record_event(prompt_id, submitted.get("prompt"), _workflow_id(submitted)) is not None:
+        if STORE.timeline.record_event(prompt_id, submitted.get("prompt"), _workflow_id(submitted),
+                                       layout=_workflow_layout(submitted)) is not None:
             _notify_timeline(prompt_id)
     except Exception:
         LOGGER.exception("Could not record queue event (generation unaffected)")
@@ -375,6 +399,15 @@ async def _capture_accepted_prompts(request, handler):
 
 def _as_json(data, status=200):
     return web.json_response(data,status=status)
+
+
+@PromptServer.instance.routes.get("/prompt_history/timeline/run")
+async def _timeline_run(request):
+    try:
+        result = STORE.timeline.run_summary(int(request.rel_url.query["id"]))
+        return _as_json(result if result else {"error": "Run not found"}, 200 if result else 404)
+    except (KeyError, ValueError, TypeError):
+        return _as_json({"error": "A valid run id is required"}, 400)
 
 
 @PromptServer.instance.routes.get("/prompt_history/list")

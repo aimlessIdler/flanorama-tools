@@ -65,7 +65,8 @@ def print_startup_banner(node_count):
         version = ""
     status = f"{version}......... {node_count} nodes"
     fallback = f"Flanorama Tools {status}  {REPOSITORY}"
-    if not stream.isatty() or os.environ.get("NO_COLOR") or os.environ.get("TERM") == "dumb":
+    # ComfyUI launchers often pipe stdout through a terminal log viewer.
+    if os.environ.get("NO_COLOR") or os.environ.get("TERM") == "dumb":
         print(fallback, file=stream, flush=True)
         return
 
@@ -73,8 +74,21 @@ def print_startup_banner(node_count):
         logo = (ROOT / "flanorama.ans").read_text(encoding="utf-8").splitlines()
         columns = shutil.get_terminal_size(fallback=(100, 24)).columns
         banner = _format_banner(logo, status, columns)
-        banner.encode(stream.encoding or "utf-8")
     except (OSError, UnicodeError, ValueError):
         print(fallback, file=stream, flush=True)
     else:
-        print(f"\n{banner}{RESET}\n", file=stream, flush=True)
+        output = f"\n{banner}{RESET}\n"
+        try:
+            output.encode(stream.encoding or "utf-8")
+        except UnicodeEncodeError:
+            # Windows launchers may report a legacy pipe encoding even though
+            # their terminal viewer accepts UTF-8.
+            buffer = getattr(stream, "buffer", None)
+            if buffer is None:
+                print(fallback, file=stream, flush=True)
+            else:
+                stream.flush()
+                buffer.write(output.encode("utf-8"))
+                buffer.flush()
+        else:
+            print(output, file=stream, flush=True)

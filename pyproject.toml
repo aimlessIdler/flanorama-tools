@@ -1,6 +1,6 @@
 [project]
 name = "flanorama-tools"
-version = "0.1.0"
+version = "0.1.1"
 description = "LoRA routing, prompt and node history, canvas packing, and scene handoff for ComfyUI."
 requires-python = ">=3.10"
 license = { file = "LICENSE" }
