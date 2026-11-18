@@ -70,60 +70,40 @@ export function inRect(rect, x, y) {
   return x >= rect.x && x <= rect.x + rect.w && y >= rect.y && y <= rect.y + rect.h;
 }
 
-// Interpret structured inputs using their shape. Custom nodes need no adapters.
+// Compare serialized values literally, expanding only fields that changed.
 export function readableChanges(changes) {
-  const decoded = value => {
+  const decode = value => {
     if (typeof value !== "string") return value;
-    try { return JSON.parse(value); } catch { return value; }
-  };
-  const labelFor = key => {
-    const words = key.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/_/g, " ");
-    return words.charAt(0).toUpperCase() + words.slice(1);
+    try {
+      const parsed = JSON.parse(value);
+      return parsed && typeof parsed === "object" ? parsed : value;
+    } catch { return value; }
   };
   const output = [];
-  function visit(label, oldValue, newValue, source) {
-    if (JSON.stringify(oldValue) === JSON.stringify(newValue)) return;
-    if (output.length >= 100) return;
-    const old = decoded(oldValue), next = decoded(newValue);
-    if (old && next && typeof old === "object" && typeof next === "object" &&
-        !isLink(old) && !isLink(next) && Array.isArray(old) === Array.isArray(next)) {
-      const prefix = label ? label + " · " : "";
-      const skipped = new Set();
-      // Width/height pairs are common across image, video, and latent nodes.
-      const dimensions = ["width", "height"].every(key => key in old && key in next)
-        ? ["width", "height"] : ["w", "h"].every(key => key in old && key in next) ? ["w", "h"] : null;
-      if (dimensions && dimensions.every(key => Number.isFinite(old[key]) && Number.isFinite(next[key]))) {
-        const [width, height] = dimensions;
-        visit(prefix + "Dimensions", old[width] + " × " + old[height], next[width] + " × " + next[height], source);
-        dimensions.forEach(key => skipped.add(key));
-      }
-      for (const key of new Set([...Object.keys(old), ...Object.keys(next)])) {
-        if (skipped.has(key)) continue;
-        let before = old[key], after = next[key];
-        // Resolve an index into an unambiguous sibling collection, so the
-        // selected value is visible even when the node serializes an index.
-        if (/^(selected|selected_index|active_index|index)$/i.test(key) &&
-            Number.isInteger(before) && Number.isInteger(after)) {
-          const collections = Object.keys(next).filter(name =>
-            Array.isArray(old[name]) && Array.isArray(next[name]) &&
-            before >= 0 && after >= 0 && before < old[name].length && after < next[name].length);
-          if (collections.length === 1) {
-            const name = collections[0];
-            before = old[name][before];
-            after = next[name][after];
-            if (JSON.stringify(before) !== JSON.stringify(after)) {
-              output.push({ param: prefix + labelFor(key), old: before, new: after, source });
-              continue;
-            }
-          }
+  function visit(path, before, after, source, hasOld, hasNew) {
+    const old = decode(before), next = decode(after);
+    if (hasOld === hasNew && JSON.stringify(old) === JSON.stringify(next)) return;
+    const oldObject = old !== null && typeof old === "object" && !isLink(old);
+    const newObject = next !== null && typeof next === "object" && !isLink(next);
+    const compatible = oldObject && newObject && Array.isArray(old) === Array.isArray(next);
+    if (compatible || (!hasOld && newObject) || (!hasNew && oldObject)) {
+      const keys = new Set([...Object.keys(oldObject ? old : {}), ...Object.keys(newObject ? next : {})]);
+      if (keys.size) {
+        for (const key of keys) {
+          const array = Array.isArray(oldObject ? old : next);
+          const child = array ? path + "[" + key + "]" : path + "." + key;
+          const beforeExists = oldObject && Object.hasOwn(old, key);
+          const afterExists = newObject && Object.hasOwn(next, key);
+          visit(child, beforeExists ? old[key] : undefined, afterExists ? next[key] : undefined,
+            source, beforeExists, afterExists);
         }
-        visit(prefix + labelFor(key), before, after, source);
+        return;
       }
-    } else {
-      output.push({ param: label, old: oldValue, new: newValue, source });
     }
+    output.push({ param: path, old: before, new: after, source, hasOld, hasNew });
   }
-  for (const change of changes) visit(labelFor(change.param), change.old, change.new, change.param);
-  if (output.length === 100) output.push({param:"More changes", new:"Open all parameters for the full state"});
+  for (const change of changes) {
+    visit(change.param, change.old, change.new, change.param, "old" in change, "new" in change);
+  }
   return output;
 }

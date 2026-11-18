@@ -24,9 +24,10 @@ function deltaRow(change) {
     old.title = formatValue(change.old).full;
     values.append(old, document.createTextNode(" → "));
   }
-  const next = el("span", formatValue(change.new, 180).text);
+  const next = el("span", change.hasNew === false ? "(removed)" : formatValue(change.new, 180).text);
   next.title = formatValue(change.new).full;
   values.append(next);
+  if (change.hasOld === false) values.append(document.createTextNode(" (added)"));
   row.append(values);
   return row;
 }

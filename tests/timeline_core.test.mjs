@@ -68,21 +68,24 @@ test("badge geometry and hit testing", () => {
   assert.equal(c.inRect(r, r.x + 1, 5), false);
 });
 
-test("structured changes infer dimensions and selected items without node type adapters", () => {
+test("literal diffs report changed leaf values for arbitrary node state", () => {
   const old = {sizes:[[1280,1280],[1080,1920]],selected:0,orientation:"portrait",w:1280,h:1280};
   const next = {...old,selected:1,orientation:"landscape",w:1920,h:1080};
   const changes = c.readableChanges([{param:"SizesState",old:JSON.stringify(old),new:JSON.stringify(next)}]);
   assert.deepEqual(changes.map(x => [x.param,x.old,x.new]), [
-    ["Sizes State · Dimensions","1280 × 1280","1920 × 1080"],
-    ["Sizes State · Selected",[1280,1280],[1080,1920]],
-    ["Sizes State · Orientation","portrait","landscape"],
+    ["SizesState.selected",0,1], ["SizesState.orientation","portrait","landscape"],
+    ["SizesState.w",1280,1920], ["SizesState.h",1280,1080],
   ]);
   const weight = c.readableChanges([{param:"config",old:'{"weight":1.2,"enabled":true}',new:'{"weight":1.3,"enabled":true}'}]);
-  assert.deepEqual(weight, [{param:"Config · Weight",old:1.2,new:1.3,source:"config"}]);
-  const selection = c.readableChanges([{param:"settings",old:{choices:["fast","fine"],index:0},new:{choices:["fast","fine"],index:1}}]);
-  assert.equal(selection[0].old,"fast");
-  assert.equal(selection[0].new,"fine");
-  const ambiguous = c.readableChanges([{param:"settings",old:{a:[1,2],b:[3,4],index:0},new:{a:[1,2],b:[3,4],index:1}}]);
-  assert.equal(ambiguous[0].old,0);
-  assert.equal(ambiguous[0].new,1);
+  assert.deepEqual(weight, [{param:"config.weight",old:1.2,new:1.3,source:"config",hasOld:true,hasNew:true}]);
+  const arrays = c.readableChanges([{param:"state",old:{items:[1,2]},new:{items:[1,3,4]}}]);
+  assert.deepEqual(arrays.map(x => [x.param,x.old,x.new]), [
+    ["state.items[1]",2,3], ["state.items[2]",undefined,4],
+  ]);
+  assert.deepEqual(c.readableChanges([{param:"json",old:'{"a":1}',new:'{ "a": 1 }'}]), []);
+  const removed = c.readableChanges([{param:"state",old:{a:null,b:1},new:{b:1}}]);
+  assert.equal(removed[0].param,"state.a");
+  assert.equal(removed[0].hasOld,true);
+  assert.equal(removed[0].hasNew,false);
+  assert.deepEqual(c.readableChanges([{param:"input",old:["1",0],new:["2",0]}]).map(x => x.param), ["input"]);
 });
